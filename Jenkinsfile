@@ -21,7 +21,7 @@ pipeline {
             steps {
                 script {
                     sh "chmod +x ./frontend/node_modules/.bin/react-scripts"
-                    sh "docker build -t frontend:latest ./frontend"
+                    sh "docker build -t frontend:${BUILD_ID} ./frontend"
                     sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:${BUILD_ID}"
                     sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:latest"
                     sh "docker push ${DOCKER_HUB_USERNAME}/frontend:${BUILD_ID}"
