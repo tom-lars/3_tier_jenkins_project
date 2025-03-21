@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-repo.git'
+                git 'https://github.com/tom-lars/3_tier_jenkins_project.git'
             }
         }
 
@@ -38,7 +38,6 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    sh "aws eks --region us-east-1 update-kubeconfig --name your-cluster"
                     sh "kubectl apply -f k8s/"
                 }
             }
