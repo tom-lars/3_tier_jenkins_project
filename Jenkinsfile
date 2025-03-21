@@ -20,6 +20,7 @@ pipeline {
         stage('Build & Push Frontend') {
             steps {
                 script {
+                    sh "chmod +x ./frontend/node_modules/.bin/react-scripts"
                     sh "docker build -t frontend:latest ./frontend"
                     sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:${BUILD_ID}"
                     sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:latest"
