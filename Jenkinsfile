@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_USERNAME = "your-dockerhub-username"
+        DOCKER_HUB_USERNAME = "siddocker467"
     }
     stages {
         stage('Checkout') {
@@ -13,9 +13,10 @@ pipeline {
         stage('Build & Push Backend') {
             steps {
                 script {
-                    sh "docker build -t backend:latest ./backend"
-                    sh "docker tag backend:latest ${DOCKER_HUB_USERNAME}/backend:latest"
-                    sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+                    sh "docker build -t backend:${BUILD_ID} ./backend"
+                    sh "docker tag backend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/backend:${BUILD_ID}"
+                    sh "docker tag backend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/backend:latest"
+                    sh "docker push ${DOCKER_HUB_USERNAME}/backend:${BUILD_ID}"
                     sh "docker push ${DOCKER_HUB_USERNAME}/backend:latest"
                 }
             }
@@ -25,8 +26,11 @@ pipeline {
             steps {
                 script {
                     sh "docker build -t frontend:latest ./frontend"
-                    sh "docker tag frontend:latest ${DOCKER_HUB_USERNAME}/frontend:latest"
+                    sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:${BUILD_ID}"
+                    sh "docker tag frontend:${BUILD_ID} ${DOCKER_HUB_USERNAME}/frontend:latest"
+                    sh "docker push ${DOCKER_HUB_USERNAME}/frontend:${BUILD_ID}"
                     sh "docker push ${DOCKER_HUB_USERNAME}/frontend:latest"
+
                 }
             }
         }
