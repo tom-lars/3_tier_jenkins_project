@@ -4,12 +4,7 @@ pipeline {
         DOCKER_HUB_USERNAME = "siddocker467"
     }
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/tom-lars/3_tier_jenkins_project.git'
-            }
-        }
-
+        
         stage('Build & Push Backend') {
             steps {
                 script {
