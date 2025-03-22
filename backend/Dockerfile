@@ -13,7 +13,6 @@ COPY . .
 
 # Create public directory for static files
 RUN mkdir -p public
-COPY index.html public/
 
 EXPOSE 3000
 
