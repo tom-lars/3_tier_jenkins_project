@@ -9,11 +9,7 @@ pipeline {
     }
     
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+        
         
         stage('Build Backend') {
             steps {
@@ -35,7 +31,6 @@ pipeline {
         
         stage('Push to DockerHub') {
             steps {
-                sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                 sh "docker push ${DOCKER_USERNAME}/three-tier-backend:${IMAGE_TAG}"
                 sh "docker push ${DOCKER_USERNAME}/three-tier-backend:latest"
                 sh "docker push ${DOCKER_USERNAME}/three-tier-frontend:${IMAGE_TAG}"
