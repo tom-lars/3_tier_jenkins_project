@@ -1,19 +1,20 @@
-FROM node:18-alpine
+FROM node:16-alpine
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy app source
 COPY . .
 
-EXPOSE 5000
+# Create public directory for static files
+RUN mkdir -p public
+COPY index.html public/
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+EXPOSE 3000
 
-# Use production mode
-ENV NODE_ENV=production
-
-CMD ["node", "server.js"] 
+CMD ["node", "app.js"]
