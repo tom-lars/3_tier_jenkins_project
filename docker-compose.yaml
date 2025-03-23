@@ -11,6 +11,12 @@ services:
       - backend
     networks:
       - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Backend (Node.js)
   backend:
@@ -29,6 +35,12 @@ services:
       - postgres
     networks:
       - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Database (PostgreSQL)
   postgres:
@@ -43,6 +55,12 @@ services:
       - "5432:5432"
     networks:
       - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 networks:
   app-network:

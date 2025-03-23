@@ -88,6 +88,19 @@
             padding: 1rem 0;
             margin-top: 2rem;
         }
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -116,10 +129,12 @@
                     </div>
                     <button type="submit">Submit</button>
                 </form>
+                <div id="formStatus"></div>
             </div>
             
             <div class="card">
                 <h2>Messages</h2>
+                <div id="messagesStatus"></div>
                 <div id="messagesList">
                     <p>Loading messages...</p>
                 </div>
@@ -135,8 +150,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // API endpoint
+            const messagesListEl = document.getElementById('messagesList');
+            const formStatusEl = document.getElementById('formStatus');
+            const messagesStatusEl = document.getElementById('messagesStatus');
+            
+            // API endpoint - use relative path which will be handled by Nginx
             const apiUrl = '/api/messages';
+            
+            // Function to show status message
+            function showStatus(element, message, isError = false) {
+                element.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
+                setTimeout(() => {
+                    element.innerHTML = '';
+                }, 5000);
+            }
             
             // Load messages on page load
             fetchMessages();
@@ -151,6 +178,9 @@
                     message: document.getElementById('message').value,
                 };
                 
+                // Clear status
+                formStatusEl.innerHTML = '';
+                
                 // Send data to API
                 fetch(apiUrl, {
                     method: 'POST',
@@ -159,28 +189,40 @@
                     },
                     body: JSON.stringify(messageData)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     // Clear form
                     document.getElementById('messageForm').reset();
+                    // Show success message
+                    showStatus(formStatusEl, 'Message submitted successfully!');
                     // Reload messages
                     fetchMessages();
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error submitting message. Please try again.');
+                    showStatus(formStatusEl, `Error submitting message: ${error.message}`, true);
                 });
             });
             
             // Function to fetch messages
             function fetchMessages() {
+                messagesListEl.innerHTML = '<p>Loading messages...</p>';
+                
                 fetch(apiUrl)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    const messagesList = document.getElementById('messagesList');
-                    
                     if (data.length === 0) {
-                        messagesList.innerHTML = '<p>No messages yet.</p>';
+                        messagesListEl.innerHTML = '<p>No messages yet.</p>';
                         return;
                     }
                     
@@ -195,13 +237,27 @@
                         `;
                     });
                     
-                    messagesList.innerHTML = messagesHtml;
+                    messagesListEl.innerHTML = messagesHtml;
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    document.getElementById('messagesList').innerHTML = '<p>Error loading messages. Please refresh.</p>';
+                    messagesListEl.innerHTML = '<p>Error loading messages. Please refresh.</p>';
+                    showStatus(messagesStatusEl, `Error loading messages: ${error.message}`, true);
                 });
             }
+            
+            // Connection check - verify that backend is reachable
+            fetch('/api/messages')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                console.log('Backend connection successful');
+            })
+            .catch(error => {
+                console.error('Backend connection failed:', error);
+                showStatus(messagesStatusEl, 'Cannot connect to backend service. Please check server logs.', true);
+            });
         });
     </script>
 </body>
