@@ -38,23 +38,12 @@ pipeline {
         
         stage('Deploy to EKS') {
             steps {
-                sh "kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/k8s-manifests.yaml"
-                sh "kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/frontend -n three-tier-app"
-                sh "kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/backend -n three-tier-app"
+                sh "kubectl apply -f k8s/k8s-manifests.yaml"
+                sh "kubectl rollout status deployment/frontend -n three-tier-app"
+                sh "kubectl rollout status deployment/backend -n three-tier-app"
             }
         }
     }
     
-    post {
-        success {
-            echo "Deployment successful! Your 3-tier application is now running on EKS."
-            sh "kubectl --kubeconfig=${KUBECONFIG} get services frontend -n three-tier-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
-        }
-        failure {
-            echo "Deployment failed. Check the logs for more information."
-        }
-        always {
-            sh "docker logout"
-        }
-    }
+    
 }
