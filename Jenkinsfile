@@ -2,10 +2,8 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_USERNAME = credentials('DOCKER_USERNAME')
-        DOCKER_PASSWORD = credentials('DOCKER_PASSWORD')
+        DOCKER_USERNAME = "siddocker467"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        KUBECONFIG = credentials('eks-kubeconfig')
     }
     
     stages {
