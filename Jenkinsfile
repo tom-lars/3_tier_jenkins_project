@@ -40,9 +40,7 @@ pipeline {
         
         stage('Deploy to EKS') {
             steps {
-                sh "mkdir -p k8s-processed"
-                sh "cat k8s-manifests.yaml | sed 's/\\${DOCKER_USERNAME}/${DOCKER_USERNAME}/g; s/\\${IMAGE_TAG}/${IMAGE_TAG}/g' > k8s-processed/manifests.yaml"
-                sh "kubectl --kubeconfig=${KUBECONFIG} apply -f k8s-processed/manifests.yaml"
+                sh "kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/k8s-manifests.yaml"
                 sh "kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/frontend -n three-tier-app"
                 sh "kubectl --kubeconfig=${KUBECONFIG} rollout status deployment/backend -n three-tier-app"
             }
