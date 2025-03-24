@@ -5,11 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3-Tier Application</title>
     <style>
-        /* Previous CSS remains the same */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .content {
+            margin: 2rem 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #messagesList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .message-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        .message-item:last-child {
+            border-bottom: none;
+        }
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            margin-top: 2rem;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
-    <!-- Previous HTML structure remains the same -->
+    <header>
+        <div class="container">
+            <h1>3-Tier Application Demo</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="content">
+            <div class="card">
+                <h2>Submit a Message</h2>
+                <form id="messageForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="4" required></textarea>
+                    </div>
+                    <button type="submit">Submit</button>
+                </form>
+                <div id="formStatus"></div>
+            </div>
+            
+            <div class="card">
+                <h2>Messages</h2>
+                <div id="messagesStatus"></div>
+                <div id="messagesList">
+                    <p>Loading messages...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 3-Tier Application Demo</p>
+        </div>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -17,101 +154,22 @@
             const formStatusEl = document.getElementById('formStatus');
             const messagesStatusEl = document.getElementById('messagesStatus');
             
-            // Configurable API endpoint with fallback
-            const API_BASE_URL = window.ENV?.API_ENDPOINT || '/api/messages';
+            // API endpoint - use relative path which will be handled by Nginx
+            const apiUrl = '/api/messages';
             
-            // Enhanced status message function
+            // Function to show status message
             function showStatus(element, message, isError = false) {
-                element.innerHTML = `
-                    <div class="status ${isError ? 'error' : 'success'}">
-                        ${message}
-                        ${isError ? `<small>Check network connection</small>` : ''}
-                    </div>
-                `;
+                element.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
                 setTimeout(() => {
                     element.innerHTML = '';
                 }, 5000);
             }
             
-            // Comprehensive fetch wrapper
-            async function safeFetch(url, options = {}) {
-                try {
-                    const response = await fetch(url, {
-                        ...options,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...options.headers
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        const errorBody = await response.text();
-                        throw new Error(`HTTP error! Status: ${response.status}, Body: ${errorBody}`);
-                    }
-                    
-                    return await response.json();
-                } catch (error) {
-                    console.error('Fetch Error:', {
-                        url,
-                        error: error.message,
-                        stack: error.stack
-                    });
-                    throw error;
-                }
-            }
+            // Load messages on page load
+            fetchMessages();
             
-            // HTML escape function to prevent XSS
-            function escapeHTML(str) {
-                return str.replace(/[&<>'"]/g, 
-                    tag => ({
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[tag] || tag));
-            }
-            
-            // Load messages function with retry mechanism
-            async function fetchMessages(retries = 3) {
-                messagesListEl.innerHTML = '<p>Loading messages...</p>';
-                
-                try {
-                    console.log(`Fetching messages from: ${API_BASE_URL}`);
-                    const data = await safeFetch(API_BASE_URL);
-                    
-                    if (data.length === 0) {
-                        messagesListEl.innerHTML = '<p>No messages yet.</p>';
-                        return;
-                    }
-                    
-                    let messagesHtml = data.map(item => `
-                        <div class="message-item">
-                            <h3>${escapeHTML(item.name)}</h3>
-                            <p>${escapeHTML(item.message)}</p>
-                            <small>Email: ${escapeHTML(item.email)}</small>
-                        </div>
-                    `).join('');
-                    
-                    messagesListEl.innerHTML = messagesHtml;
-                } catch (error) {
-                    console.error('Message Fetch Error:', error);
-                    
-                    if (retries > 0) {
-                        console.log(`Retrying fetch. Attempts left: ${retries - 1}`);
-                        setTimeout(() => fetchMessages(retries - 1), 2000);
-                    } else {
-                        messagesListEl.innerHTML = `
-                            <p>Error loading messages</p>
-                            <small>${error.message}</small>
-                        `;
-                        showStatus(messagesStatusEl, 'Failed to load messages', true);
-                    }
-                }
-            }
-            
-            // Form submission handler
-            document.getElementById('messageForm').addEventListener('submit', async function(e) {
+            // Handle form submission
+            document.getElementById('messageForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const messageData = {
@@ -120,28 +178,86 @@
                     message: document.getElementById('message').value,
                 };
                 
+                // Clear status
                 formStatusEl.innerHTML = '';
                 
-                try {
-                    await safeFetch(API_BASE_URL, {
-                        method: 'POST',
-                        body: JSON.stringify(messageData)
-                    });
-                    
+                // Send data to API
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(messageData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
                     // Clear form
                     document.getElementById('messageForm').reset();
+                    // Show success message
                     showStatus(formStatusEl, 'Message submitted successfully!');
-                    
                     // Reload messages
                     fetchMessages();
-                } catch (error) {
-                    showStatus(formStatusEl, `Error: ${error.message}`, true);
-                }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showStatus(formStatusEl, `Error submitting message: ${error.message}`, true);
+                });
             });
             
-            // Initial load and periodic refresh
-            fetchMessages();
-            setInterval(fetchMessages, 60000); // Refresh messages every minute
+            // Function to fetch messages
+            function fetchMessages() {
+                messagesListEl.innerHTML = '<p>Loading messages...</p>';
+                
+                fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length === 0) {
+                        messagesListEl.innerHTML = '<p>No messages yet.</p>';
+                        return;
+                    }
+                    
+                    let messagesHtml = '';
+                    data.forEach(item => {
+                        messagesHtml += `
+                            <div class="message-item">
+                                <h3>${item.name}</h3>
+                                <p>${item.message}</p>
+                                <small>Email: ${item.email}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    messagesListEl.innerHTML = messagesHtml;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    messagesListEl.innerHTML = '<p>Error loading messages. Please refresh.</p>';
+                    showStatus(messagesStatusEl, `Error loading messages: ${error.message}`, true);
+                });
+            }
+            
+            // Connection check - verify that backend is reachable
+            fetch('/api/messages')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                console.log('Backend connection successful');
+            })
+            .catch(error => {
+                console.error('Backend connection failed:', error);
+                showStatus(messagesStatusEl, 'Cannot connect to backend service. Please check server logs.', true);
+            });
         });
     </script>
 </body>

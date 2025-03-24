@@ -204,12 +204,16 @@ kind: Service
 metadata:
   name: backend
   namespace: three-tier-app
+  labels:
+    app: backend
 spec:
   selector:
     app: backend
   ports:
-  - port: 3000
+  - name: http
+    port: 3000
     targetPort: 3000
+    protocol: TCP
   type: ClusterIP
 
 ---
@@ -234,6 +238,13 @@ spec:
         image: siddocker467/three-tier-frontend:latest
         ports:
         - containerPort: 80
+          name: http
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: BACKEND_URL
         resources:
           limits:
             cpu: "0.2"
@@ -243,14 +254,14 @@ spec:
             memory: "128Mi"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
@@ -263,12 +274,16 @@ kind: Service
 metadata:
   name: frontend
   namespace: three-tier-app
+  labels:
+    app: frontend
 spec:
   selector:
     app: frontend
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 80
+    protocol: TCP
   type: ClusterIP
 
 ---
@@ -283,6 +298,15 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: "8m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Access-Control-Allow-Origin: $http_origin";
+      more_set_headers "Access-Control-Allow-Methods: GET, POST, OPTIONS";
+      more_set_headers "Access-Control-Allow-Headers: Authorization, Content-Type";
 spec:
   rules:
   - http:

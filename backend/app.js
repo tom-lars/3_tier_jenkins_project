@@ -8,19 +8,20 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Configure CORS - more permissive for development
 app.use(cors({
-  origin: '*', // More permissive for development
-  methods: ['GET', 'POST', 'OPTIONS'],
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Middleware
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Enhanced logging middleware
+// Log all requests for debugging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 
@@ -31,9 +32,6 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'appdb',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
 });
 
 // Test database connection on startup
@@ -78,7 +76,7 @@ const initDb = async () => {
 // Routes
 app.get('/api/messages', async (req, res) => {
   try {
-    console.log('Fetching messages from database');
+    console.log('GET /api/messages - Fetching messages from database');
     const result = await pool.query(
       'SELECT * FROM messages ORDER BY created_at DESC LIMIT 100'
     );
@@ -93,9 +91,10 @@ app.get('/api/messages', async (req, res) => {
 app.post('/api/messages', async (req, res) => {
   const { name, email, message } = req.body;
   
-  console.log('Received message:', { name, email, messagePreview: message.substring(0, 20) + '...' });
+  console.log('POST /api/messages - Received message:', { name, email, message: message.substring(0, 20) + '...' });
   
   if (!name || !email || !message) {
+    console.log('Missing required fields');
     return res.status(400).json({ error: 'All fields are required' });
   }
   
@@ -113,42 +112,20 @@ app.post('/api/messages', async (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Check database connection
-    await pool.query('SELECT NOW()');
-    
-    res.status(200).json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      database: 'connected'
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      database: 'disconnected',
-      error: err.message
-    });
-  }
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Error handling for undefined routes
+app.use((req, res) => {
+  console.log(`404 - Route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ error: 'Route not found' });
 });
 
 // Start server
-const server = app.listen(PORT, async () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await initDb();
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    pool.end(() => {
-      console.log('Database pool closed');
-      process.exit(0);
-    });
-  });
 });
 
 module.exports = app;
