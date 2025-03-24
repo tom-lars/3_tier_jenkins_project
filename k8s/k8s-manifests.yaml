@@ -6,6 +6,27 @@ metadata:
   name: three-tier-app
 
 ---
+
+# Network Policy to control traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy
+  namespace: three-tier-app
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - port: 3000
+      protocol: TCP
+
+---
 # PostgreSQL Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -41,7 +62,6 @@ spec:
       - name: postgres-data
         persistentVolumeClaim:
           claimName: postgres-pvc
-
 ---
 #postgres pv
 apiVersion: v1
@@ -59,9 +79,9 @@ spec:
   hostPath:
     path: /mnt/data/postgres
 
+
 ---
 # PostgreSQL PVC
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -139,6 +159,7 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 5
 
+
 ---
 # Backend Service
 apiVersion: v1
@@ -203,3 +224,4 @@ spec:
   - port: 80
     targetPort: 80
   type: LoadBalancer
+
