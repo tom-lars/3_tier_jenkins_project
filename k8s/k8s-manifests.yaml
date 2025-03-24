@@ -89,7 +89,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ${DOCKER_USERNAME}/three-tier-backend:latest
+        image: siddocker467/three-tier-backend:latest
         ports:
         - containerPort: 3000
         env:
@@ -152,7 +152,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ${DOCKER_USERNAME}/three-tier-frontend:latest
+        image: siddocker467/three-tier-frontend:latest
         ports:
         - containerPort: 80
         resources:
