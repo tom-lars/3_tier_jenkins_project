@@ -98,7 +98,7 @@ metadata:
   name: backend
   namespace: three-tier-app
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -161,7 +161,7 @@ metadata:
   name: frontend
   namespace: three-tier-app
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
